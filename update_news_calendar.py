@@ -1,62 +1,63 @@
 import requests
-import xml.etree.ElementTree as ET
 import pandas as pd
 from datetime import datetime
 import pytz
-import time
 
-PRIMARY_URLS = [
-    "https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml",
-    "https://cdn.forexfactory.net/ff_calendar_thisweek.xml",
-]
+# --------------------------------------------
+# CONFIG
+# --------------------------------------------
+SAVE_PATH = "news_calendar.csv"
+TARGET_CURRENCY = "USD"
+MIN_IMPORTANCE = ["High", "Medium"]
 
-# --- Add GitHub-safe proxy fallback ---
-FALLBACK_PROXY = (
-    "https://r.jina.ai/http://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml"
-)
-
+# --------------------------------------------
+# 1️⃣ Fetch calendar data from Investing.com proxy
+# --------------------------------------------
 def fetch_calendar():
-    urls = PRIMARY_URLS + [FALLBACK_PROXY]
-    for url in urls:
+    url = "https://economic-calendar-api.p.rapidapi.com/calendar"
+    headers = {
+        "x-rapidapi-host": "economic-calendar-api.p.rapidapi.com",
+        "x-rapidapi-key": "demo"  # Replace with your free RapidAPI key
+    }
+    params = {"country": "United States", "importance": "1,2", "limit": 50}
+    resp = requests.get(url, headers=headers, params=params, timeout=20)
+    resp.raise_for_status()
+    return resp.json()["data"]
+
+# --------------------------------------------
+# 2️⃣ Normalize and save to CSV
+# --------------------------------------------
+def build_csv(events):
+    rows = []
+    for e in events:
         try:
-            print(f"🔹 Fetching: {url}")
-            response = requests.get(url, timeout=25)
-            if response.status_code == 200:
-                if response.text.strip().startswith("<") or "xml" in response.text[:100]:
-                    print(f"✅ Successfully fetched from {url}")
-                    return response.content
-            print(f"⚠️ Invalid content from {url} (status {response.status_code})")
-        except Exception as e:
-            print(f"⚠️ Failed from {url}: {e}")
-        time.sleep(2)
+            title = e.get("event", "")
+            impact = e.get("impact", "Medium")
+            currency = e.get("currency", "USD")
+            date_str = e.get("date", "")
+            time_str = e.get("time", "")
 
-    raise RuntimeError("❌ All sources failed — Forex Factory feed unavailable.")
+            if currency != TARGET_CURRENCY or impact not in MIN_IMPORTANCE:
+                continue
 
-# --- Fetch XML (with retry/fallback) ---
-xml_data = fetch_calendar()
-
-# --- Parse events ---
-root = ET.fromstring(xml_data)
-events = []
-
-for item in root.findall("event"):
-    currency = item.findtext("country", "")
-    impact = item.findtext("impact", "")
-    title = item.findtext("title", "")
-    date = item.findtext("date", "")
-    time_str = item.findtext("time", "")
-
-    if currency == "USD" and impact in ("High", "Medium"):
-        try:
-            dt_str = f"{date} {time_str}"
-            dt = datetime.strptime(dt_str, "%b %d, %Y %I:%M%p")
+            dt = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
             dt_utc = pytz.timezone("US/Eastern").localize(dt).astimezone(pytz.UTC)
-            events.append([dt_utc.strftime("%Y-%m-%d %H:%M"), impact, currency, title])
-        except Exception as e:
+            rows.append([dt_utc.strftime("%Y-%m-%d %H:%M"), impact, currency, title])
+        except Exception:
             continue
 
-# --- Save to CSV ---
-df = pd.DataFrame(events, columns=["datetime", "impact", "currency", "title"])
-df.to_csv("news_calendar.csv", index=False, header=False, encoding="utf-8")
+    df = pd.DataFrame(rows, columns=["datetime", "impact", "currency", "title"])
+    df.to_csv(SAVE_PATH, index=False, header=False)
+    print(f"✅ Updated {SAVE_PATH} with {len(df)} events.")
 
-print(f"✅ News calendar updated successfully ({len(df)} events).")
+# --------------------------------------------
+# MAIN
+# --------------------------------------------
+if __name__ == "__main__":
+    try:
+        print("🔹 Fetching latest economic calendar...")
+        data = fetch_calendar()
+        build_csv(data)
+    except Exception as e:
+        print("❌ Failed to update calendar:", str(e))
+        raise
