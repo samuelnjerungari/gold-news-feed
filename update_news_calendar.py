@@ -5,23 +5,31 @@ from datetime import datetime
 import pytz
 import time
 
-# --- Primary and fallback feeds ---
-PRIMARY_URL = "https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml"
-FALLBACK_URL = "https://cdn.forexfactory.net/ff_calendar_thisweek.xml"
-PROXY_URL = "https://r.jina.ai/https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml"
+PRIMARY_URLS = [
+    "https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml",
+    "https://cdn.forexfactory.net/ff_calendar_thisweek.xml",
+]
+
+# --- Add GitHub-safe proxy fallback ---
+FALLBACK_PROXY = (
+    "https://r.jina.ai/http://cdn-nfs.faireconomy.media/ff_calendar_thisweek.xml"
+)
 
 def fetch_calendar():
-    urls = [PRIMARY_URL, FALLBACK_URL, PROXY_URL]
+    urls = PRIMARY_URLS + [FALLBACK_PROXY]
     for url in urls:
         try:
             print(f"🔹 Fetching: {url}")
-            response = requests.get(url, timeout=20)
-            if response.status_code == 200 and len(response.content) > 5000:
-                print(f"✅ Successfully fetched from {url}")
-                return response.content
+            response = requests.get(url, timeout=25)
+            if response.status_code == 200:
+                if response.text.strip().startswith("<") or "xml" in response.text[:100]:
+                    print(f"✅ Successfully fetched from {url}")
+                    return response.content
+            print(f"⚠️ Invalid content from {url} (status {response.status_code})")
         except Exception as e:
             print(f"⚠️ Failed from {url}: {e}")
         time.sleep(2)
+
     raise RuntimeError("❌ All sources failed — Forex Factory feed unavailable.")
 
 # --- Fetch XML (with retry/fallback) ---
