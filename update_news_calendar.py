@@ -5,7 +5,8 @@ import os
 
 # --- CONFIG ---
 API_URL = "https://ultimate-economic-calendar.p.rapidapi.com/economic-events/tradingview"
-API_KEY = os.getenv("RAPIDAPI_KEY")  # We'll store this securely in GitHub Secrets
+API_KEY = os.getenv("RAPIDAPI_KEY", "").strip()
+
 COUNTRIES = "US"
 CSV_PATH = "news_calendar.csv"
 
