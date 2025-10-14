@@ -2,8 +2,11 @@ name: Auto-update news calendar
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # runs every day at 00:00 UTC
-  workflow_dispatch:    # allows manual trigger
+    - cron: '0 0 * * *'  # Runs every day at 00:00 UTC
+  workflow_dispatch:    # Allows manual trigger
+
+permissions:
+  contents: write  # Grants write access to repository contents
 
 jobs:
   update-news:
