@@ -9,7 +9,7 @@ RSS_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml"
 COUNTRIES = "USD"
 CSV_PATH = "news_calendar.csv"
 SKIP_DAYS = {5, 6}  # Saturday, Sunday
-MIN_REQUEST_HOUR = 6
+MIN_REQUEST_HOUR = 2
 
 # --- US BANK HOLIDAYS 2025 ---
 US_HOLIDAYS_2025 = {
