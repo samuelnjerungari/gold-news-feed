@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # This is the key addition!
+  contents: write  # ✅ CRITICAL: Grant write permissions
 
 jobs:
   update-macro:
@@ -15,7 +15,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # Explicitly use GITHUB_TOKEN
+          token: ${{ secrets.GITHUB_TOKEN }}  # ✅ Use authenticated token
+          persist-credentials: true            # ✅ Keep credentials for push
           
       - name: Set up Python
         uses: actions/setup-python@v4
