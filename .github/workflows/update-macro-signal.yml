@@ -2,7 +2,7 @@ name: Auto-update macro signal
 
 on:
   schedule:
-    - cron: '*/15 * * * *'   # Increased frequency to 15 mins
+    - cron: '*/10 * * * *'   # Increased frequency to 10 mins
   workflow_dispatch:         # Allows you to click "Run Now" manually
 
 permissions:
