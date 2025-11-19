@@ -25,10 +25,12 @@ RECENT_HOURS = 6            # how many hours of headlines to inspect
 HEADLINE_FEEDS = [
     "https://www.forexlive.com/feed/news",
     "https://www.dailyfx.com/feeds/market-news",
-    "https://www.fxstreet.com/rss",
-    "https://www.kitco.com/rss/feed.xml",
-    "https://www.fxstreet.com/rss/forex-news"
+    "https://www.fxempire.com/api/v1/en/news?format=rss",
+    "https://www.marketwatch.com/rss/topstories",
+    "https://feeds.reuters.com/reuters/worldnews",
+    "https://www.kitco.com/kitco-news-rss"
 ]
+
 
 RELEVANT_KEYWORDS = ["gold","xau","xauusd","dxy","dollar","fed","fomc","inflation","cpi","nfp","employment","yield","vix","geopolitical","risk-on","risk-off"]
 # calendar CSV produced by your existing gold-news-feed (same repo)
