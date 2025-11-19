@@ -23,14 +23,12 @@ import math
 OUTPUT = "macro_signal.csv"
 RECENT_HOURS = 6            # how many hours of headlines to inspect
 HEADLINE_FEEDS = [
-    "https://www.forexlive.com/feed/news",
-    "https://www.dailyfx.com/feeds/market-news",
-    "https://www.fxempire.com/api/v1/en/news?format=rss",
-    "https://www.marketwatch.com/rss/topstories",
-    "https://feeds.reuters.com/reuters/worldnews",
-    "https://www.kitco.com/kitco-news-rss"
+    "https://news.google.com/rss/search?q=gold+OR+XAUUSD&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=US+dollar+OR+DXY&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=Federal+Reserve+OR+FOMC&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=inflation+OR+CPI+OR+NFP&hl=en-US&gl=US&ceid=US:en",
+    "https://news.google.com/rss/search?q=geopolitical+risk&hl=en-US&gl=US&ceid=US:en"
 ]
-
 
 RELEVANT_KEYWORDS = ["gold","xau","xauusd","dxy","dollar","fed","fomc","inflation","cpi","nfp","employment","yield","vix","geopolitical","risk-on","risk-off"]
 # calendar CSV produced by your existing gold-news-feed (same repo)
