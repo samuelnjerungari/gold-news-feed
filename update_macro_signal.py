@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 macro_signal_pro.py
-Refined Macro Signal for Gold (Production Ready):
-- Uses curl_cffi to bypass Yahoo 403/Blocking restrictions
-- Analyzes: Gold Momentum, Real Yields, DXY, and VIX
-- Output: Saves to macro_signal.csv
+Refined Macro Signal for Gold (Production Ready - v2.1):
+- Fixed: Silences YFinance FutureWarning
+- Fixed: Prints VIX status in console log
+- Dependencies: curl_cffi, yfinance, pandas
 """
-from curl_cffi import requests as curl_requests  # <--- THE KEY FIX
+from curl_cffi import requests as curl_requests
 import yfinance as yf
 import pandas as pd
 import os
@@ -26,36 +26,25 @@ TICKERS = {
 # ---------------- HELPERS ----------------
 
 def get_cffi_session():
-    """
-    Creates a curl_cffi session that impersonates a real Chrome browser.
-    This fixes both the 'YFDataException' and the GitHub '403 Forbidden' error.
-    """
-    # 'impersonate="chrome"' generates the correct TLS fingerprint to fool Yahoo
+    """Creates a browser-impersonating session to bypass Yahoo blocking."""
     return curl_requests.Session(impersonate="chrome")
 
 def is_high_impact_window():
-    """
-    Simple time check to flag if we are in a 'danger zone' (US Morning Open).
-    """
+    """Returns 1 if we are in the US Session Morning 'Danger Zone'."""
     now_utc = datetime.now(timezone.utc)
-    # 12:00 UTC to 15:00 UTC cover US Open and major data releases (8:30am - 11:00am EST)
+    # 12:00 UTC to 15:00 UTC (approx 8am - 11am NY Time)
     if 12 <= now_utc.hour <= 15:
         return 1 
     return 0
 
 def get_market_regime(lookback_days=5):
-    """
-    Fetches data using the anti-blocking session.
-    """
     session = get_cffi_session()
-    
     try:
-        # Pass the curl_cffi session to yf.download
+        # Added auto_adjust=True to silence FutureWarning
         ticker_list = list(TICKERS.values())
-        data = yf.download(ticker_list, period=f"{lookback_days}d", progress=False, session=session)['Close']
+        data = yf.download(ticker_list, period=f"{lookback_days}d", progress=False, session=session, auto_adjust=True)['Close']
         
         if data.empty or len(data) < 2:
-            print("[Error] YFinance returned empty data (Possible Block).")
             return None
             
         signals = {}
@@ -78,7 +67,7 @@ def get_market_regime(lookback_days=5):
         dxy_change = (dxy_price.iloc[-1] - dxy_price.iloc[0]) / dxy_price.iloc[0]
         signals['dxy_signal'] = -1 if dxy_change > 0.002 else (1 if dxy_change < -0.002 else 0)
 
-        # 4. VIX SIGNAL
+        # 4. VIX SIGNAL (Added to print output below)
         vix_price = data[TICKERS["VIX"]]
         vix_now = vix_price.iloc[-1]
         signals['vix_signal'] = 1 if vix_now > 18 else 0
@@ -86,19 +75,17 @@ def get_market_regime(lookback_days=5):
         return signals
 
     except Exception as e:
-        print(f"[Critical Error] Data fetch failed: {e}")
+        print(f"[Error] Fetch failed: {e}")
         return None
 
 # ---------------- MAIN ----------------
 def main():
     regime = get_market_regime()
-    
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     
     if regime is None:
-        # Fallback: Neutral Signal
+        # Fallback
         row = [ts, "0", "0", "0", "0", "0"]
-        print("[Warning] Using Neutral Fallback due to fetch error.")
     else:
         total_score = regime['gold_bias'] + regime['yield_pressure'] + regime['dxy_signal'] + regime['vix_signal']
         high_impact = is_high_impact_window()
@@ -114,7 +101,8 @@ def main():
 
         print(f"--- MACRO REPORT {ts} ---")
         print(f"Total Score:   {total_score}")
-        print(f"Drivers:       Gold({regime['gold_bias']}) Yields({regime['yield_pressure']}) DXY({regime['dxy_signal']})")
+        print(f"Drivers:       Gold({regime['gold_bias']}) Yields({regime['yield_pressure']}) DXY({regime['dxy_signal']}) VIX({regime['vix_signal']})")
+        print(f"News Window:   {'DANGER (1)' if high_impact else 'SAFE (0)'}")
 
     # Write CSV
     try:
