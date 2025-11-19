@@ -26,9 +26,10 @@ HEADLINE_FEEDS = [
     "https://www.forexlive.com/feed/news",
     "https://www.dailyfx.com/feeds/market-news",
     "https://www.fxstreet.com/rss",
-    "https://www.kitco.com/news/index.rss",
-    "https://www.investing.com/rss/news_30.rss",
+    "https://www.kitco.com/rss/feed.xml",
+    "https://www.fxstreet.com/rss/forex-news"
 ]
+
 RELEVANT_KEYWORDS = ["gold","xau","xauusd","dxy","dollar","fed","fomc","inflation","cpi","nfp","employment","yield","vix","geopolitical","risk-on","risk-off"]
 # calendar CSV produced by your existing gold-news-feed (same repo)
 CALENDAR_CSV = "news_calendar.csv"
