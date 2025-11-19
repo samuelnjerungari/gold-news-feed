@@ -2,11 +2,11 @@ name: Auto-update macro signal
 
 on:
   schedule:
-    - cron: '*/30 * * * *'   # run every 30 minutes
-  workflow_dispatch:
+    - cron: '*/15 * * * *'   # Increased frequency to 15 mins
+  workflow_dispatch:         # Allows you to click "Run Now" manually
 
 permissions:
-  contents: write  # ✅ CRITICAL: Grant write permissions
+  contents: write
 
 jobs:
   update-macro:
@@ -15,30 +15,32 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # ✅ Use authenticated token
-          persist-credentials: true            # ✅ Keep credentials for push
-          
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          
+          cache: 'pip'       # ✅ Caches libraries so runs are faster (saves ~30s)
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests feedparser vaderSentiment yfinance pandas
-          
+          pip install --upgrade pip
+          # Added 'lxml' which is often needed for yfinance/feedparser scraping
+          pip install requests feedparser vaderSentiment yfinance pandas lxml
+
       - name: Run macro script
         run: python update_macro_signal.py
-        
+
       - name: Commit & push if changed
         run: |
-          git config user.name "GitHub Actions"
+          git config user.name "MacroBot"
           git config user.email "actions@github.com"
           git add macro_signal.csv
-          if ! git diff --staged --quiet; then
-            git commit -m "Auto-update macro_signal.csv $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          # Check if there are changes before committing to avoid empty commit errors
+          if [[ -n $(git status -s macro_signal.csv) ]]; then
+            git commit -m "Signal Update: $(date -u +'%H:%M UTC')"
             git push
           else
-            echo "No changes to commit"
+            echo "No change in signal. Skipping commit."
           fi
