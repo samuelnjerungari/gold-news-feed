@@ -122,7 +122,7 @@ def detect_high_impact_event():
     if not os.path.exists(CALENDAR_CSV):
         return 0
     try:
-        df = pd.read_csv(CALENDAR_CSV, names=["datetime","impact","currency","title"], header=None, parse_dates=["datetime"], infer_datetime_format=True)
+        df = pd.read_csv(CALENDAR_CSV, names=["datetime","impact","currency","title"], header=None, parse_dates=["datetime"])
         now = datetime.now(timezone.utc)
         window_end = now + timedelta(hours=HIGH_IMPACT_WINDOW_HOURS)
         # last column 'title' contains holidays with emoji in your feed
