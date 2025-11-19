@@ -1,6 +1,7 @@
 requests
 feedparser
 vaderSentiment
-yfinance
+yfinance>=0.2.61
 pandas
 lxml
+curl_cffi
