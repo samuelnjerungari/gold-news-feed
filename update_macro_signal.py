@@ -95,7 +95,8 @@ def main():
             str(total_score), 
             str(regime['gold_bias']), 
             str(regime['yield_pressure']), 
-            str(regime['dxy_signal']), 
+            str(regime['dxy_signal']),
+            str(regime['vix_signal']),
             str(high_impact)
         ]
 
@@ -107,7 +108,7 @@ def main():
     # Write CSV
     try:
         with open(OUTPUT, "w", newline="") as f:
-            header = "timestamp,total_score,gold_bias,yield_pressure,dxy_signal,high_impact\n"
+            header = "timestamp,total_score,gold_bias,yield_pressure,dxy_signal,vix_signal,high_impact\n"
             f.write(header)
             f.write(",".join(row) + "\n")
         print(f"[Success] Wrote signal to {OUTPUT}")
