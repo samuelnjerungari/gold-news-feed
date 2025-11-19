@@ -1,0 +1,6 @@
+requests
+feedparser
+vaderSentiment
+yfinance
+pandas
+lxml
