@@ -11,6 +11,9 @@ CSV_PATH = "news_calendar.csv"
 SKIP_DAYS = {5, 6}  # Saturday, Sunday
 MIN_REQUEST_HOUR = 2
 
+# Event duration buffer in minutes (how long to keep event as "current")
+EVENT_DURATION_MINUTES = 30  # Adjust based on typical news event duration
+
 # --- US BANK HOLIDAYS 2025 ---
 US_HOLIDAYS_2025 = {
     "2025-01-01": "New Year's Day",
@@ -20,7 +23,7 @@ US_HOLIDAYS_2025 = {
     "2025-06-19": "Juneteenth",
     "2025-07-04": "Independence Day",
     "2025-09-01": "Labor Day",
-    "2025-11-11": "Veterans Day",  # ← TODAY!
+    "2025-11-11": "Veterans Day",
     "2025-11-27": "Thanksgiving",
     "2025-12-25": "Christmas Day"
 }
@@ -83,9 +86,60 @@ def fetch_news():
             
     return events
 
+# --- FILTER FUTURE EVENTS ---
+def filter_future_events(events):
+    """
+    Filters events to keep only future or currently happening events.
+    
+    Logic:
+    - For regular news events: keep if event_time + duration >= current_time
+    - For bank holidays: keep if event_date >= current_date
+    """
+    now = datetime.now(timezone.utc)
+    filtered_events = []
+    removed_count = 0
+    
+    for event in events:
+        try:
+            event_datetime_str = event[0]
+            title = event[3]
+            
+            # Parse event datetime
+            event_dt = datetime.strptime(event_datetime_str, "%Y-%m-%d %H:%M")
+            event_dt = event_dt.replace(tzinfo=timezone.utc)
+            
+            # Check if it's a bank holiday (all-day event)
+            is_holiday = "🏦" in title
+            
+            if is_holiday:
+                # For holidays, keep if the date is today or future
+                if event_dt.date() >= now.date():
+                    filtered_events.append(event)
+                else:
+                    removed_count += 1
+            else:
+                # For news events, add duration buffer
+                event_end_time = event_dt + timedelta(minutes=EVENT_DURATION_MINUTES)
+                
+                # Keep if event hasn't finished yet
+                if event_end_time >= now:
+                    filtered_events.append(event)
+                else:
+                    removed_count += 1
+                    
+        except Exception as e:
+            print(f"⚠️ Error filtering event: {e}")
+            # Keep event if parsing fails (safety fallback)
+            filtered_events.append(event)
+    
+    if removed_count > 0:
+        print(f"🗑️ Removed {removed_count} past events")
+    
+    return filtered_events
+
 # --- UPDATE CSV ---
 def update_news_calendar():
-    """Checks conditions, fetches news + holidays, and saves the CSV."""
+    """Checks conditions, fetches news + holidays, filters past events, and saves the CSV."""
     now = datetime.now(timezone.utc)
 
     # 🛑 Skip weekends
@@ -108,6 +162,16 @@ def update_news_calendar():
     if not events:
         print("⚠️ No relevant events returned from feed.")
         return
+    
+    # ✅ Filter out past events
+    events = filter_future_events(events)
+    
+    if not events:
+        print("⚠️ No future events remaining after filtering.")
+        # Create empty CSV to clear old data
+        pd.DataFrame(columns=["datetime", "impact", "currency", "title"]).to_csv(CSV_PATH, index=False, header=False)
+        print(f"✅ Created empty {CSV_PATH}")
+        return
 
     df = pd.DataFrame(events, columns=["datetime", "impact", "currency", "title"])
     df = df.sort_values("datetime")
@@ -124,7 +188,8 @@ def update_news_calendar():
     print(f"✅ Updated {CSV_PATH} with:")
     print(f"   📰 {news_count} High/Moderate {COUNTRIES} news events")
     print(f"   🏦 {holiday_count} US bank holidays")
-    print(f"   📊 {len(df)} total events")
+    print(f"   📊 {len(df)} total upcoming events")
+    print(f"   ⏰ Current UTC time: {now.strftime('%Y-%m-%d %H:%M:%S')}")
 
 if __name__ == "__main__":
     update_news_calendar()
